@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SchenkerControlTray", "SchenkerControlTray\SchenkerControlTray.csproj", "{18FF911F-8B54-4BB9-B5B2-0FDC79574B85}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SchenkerControlTray.Tests", "SchenkerControlTray.Tests\SchenkerControlTray.Tests.csproj", "{D2F69E0E-1F4B-45E2-B576-EF5F7A51D8B5}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{18FF911F-8B54-4BB9-B5B2-0FDC79574B85}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{18FF911F-8B54-4BB9-B5B2-0FDC79574B85}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{18FF911F-8B54-4BB9-B5B2-0FDC79574B85}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{18FF911F-8B54-4BB9-B5B2-0FDC79574B85}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D2F69E0E-1F4B-45E2-B576-EF5F7A51D8B5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D2F69E0E-1F4B-45E2-B576-EF5F7A51D8B5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D2F69E0E-1F4B-45E2-B576-EF5F7A51D8B5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D2F69E0E-1F4B-45E2-B576-EF5F7A51D8B5}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

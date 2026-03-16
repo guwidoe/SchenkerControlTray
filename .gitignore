@@ -1,0 +1,9 @@
+bin/
+obj/
+.vs/
+dist/
+*.msi
+*.user
+*.suo
+*.cache
+*.pdb
