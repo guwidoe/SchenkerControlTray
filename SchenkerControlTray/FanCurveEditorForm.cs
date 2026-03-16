@@ -9,6 +9,7 @@ internal sealed class FanCurveEditorForm : Form
     private readonly FanTableService _fanTableService;
 
     private readonly ComboBox _profileCombo = new() { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly Button _renameProfileButton = new() { Text = "Rename…", AutoSize = true };
     private readonly Label _currentStatusLabel = new() { AutoSize = true };
     private readonly Label _tablePathLabel = new() { AutoSize = true };
     private readonly CheckBox _fanControlRespectiveCheckBox = new() { Text = "Fan control respective" };
@@ -37,6 +38,8 @@ internal sealed class FanCurveEditorForm : Form
     private BindingList<FanPoint> _cpuPoints = new();
     private BindingList<FanPoint> _gpuPoints = new();
     private bool _suppressPointEditorEvents;
+
+    public event EventHandler? ProfilesChanged;
 
     public FanCurveEditorForm(ControlCenterClient client, FanTableService fanTableService, StatusSnapshot snapshot)
     {
@@ -67,7 +70,13 @@ internal sealed class FanCurveEditorForm : Form
         _snapshot = snapshot;
         if (_snapshot.FanStatus is { } fanStatus)
         {
-            _currentStatusLabel.Text = $"Current: {fanStatus.CurrentMode.DisplayName()} · Profile {fanStatus.CurrentProfileIndex + 1} · {fanStatus.FAN_TableName}";
+            var activeProfile = _fanTableService
+                .GetProfileDefinitions()
+                .FirstOrDefault(p => p.Mode == fanStatus.CurrentMode && p.ProfileIndex == fanStatus.CurrentProfileIndex);
+
+            _currentStatusLabel.Text = activeProfile is null
+                ? $"Current: {fanStatus.CurrentMode.DisplayName()} · Profile {fanStatus.CurrentProfileIndex + 1} · {fanStatus.FAN_TableName}"
+                : $"Current: {fanStatus.CurrentMode.DisplayName()} · {activeProfile.MenuLabel}";
         }
         else
         {
@@ -90,15 +99,19 @@ internal sealed class FanCurveEditorForm : Form
         root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
-        var top = new TableLayoutPanel { Dock = DockStyle.Top, ColumnCount = 2, AutoSize = true };
+        var top = new TableLayoutPanel { Dock = DockStyle.Top, ColumnCount = 3, AutoSize = true };
         top.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         top.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        top.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         top.Controls.Add(new Label { Text = "Target profile:", AutoSize = true, Anchor = AnchorStyles.Left }, 0, 0);
         top.Controls.Add(_profileCombo, 1, 0);
+        top.Controls.Add(_renameProfileButton, 2, 0);
         top.Controls.Add(new Label { Text = "Current status:", AutoSize = true, Anchor = AnchorStyles.Left }, 0, 1);
         top.Controls.Add(_currentStatusLabel, 1, 1);
+        top.SetColumnSpan(_currentStatusLabel, 2);
         top.Controls.Add(new Label { Text = "Fan table file:", AutoSize = true, Anchor = AnchorStyles.Left }, 0, 2);
         top.Controls.Add(_tablePathLabel, 1, 2);
+        top.SetColumnSpan(_tablePathLabel, 2);
 
         var options = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true };
         options.Controls.Add(_fanControlRespectiveCheckBox);
@@ -231,6 +244,7 @@ internal sealed class FanCurveEditorForm : Form
     private void WireEvents()
     {
         _profileCombo.SelectedIndexChanged += (_, _) => LoadSelectedProfile();
+        _renameProfileButton.Click += (_, _) => RenameSelectedProfile();
         _reloadButton.Click += (_, _) => LoadSelectedProfile();
         _saveButton.Click += async (_, _) => await SaveAsync(activate: false);
         _saveAndActivateButton.Click += async (_, _) => await SaveAsync(activate: true);
@@ -310,6 +324,27 @@ internal sealed class FanCurveEditorForm : Form
         }
 
         RefreshChartsAndEditor();
+    }
+
+    private void RenameSelectedProfile()
+    {
+        var profile = SelectedProfile;
+        if (profile is null)
+        {
+            return;
+        }
+
+        using var dialog = new RenameProfileForm(profile);
+        if (dialog.ShowDialog(this) != DialogResult.OK)
+        {
+            return;
+        }
+
+        _fanTableService.SaveProfileAlias(profile.Mode, profile.ProfileIndex, dialog.AliasName);
+        ReloadProfileDefinitions();
+        SelectProfile(profile.Mode, profile.ProfileIndex);
+        UpdateSnapshot(_snapshot);
+        ProfilesChanged?.Invoke(this, EventArgs.Empty);
     }
 
     private FanTable BuildTableFromEditor()

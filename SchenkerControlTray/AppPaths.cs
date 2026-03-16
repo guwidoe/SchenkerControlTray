@@ -11,4 +11,10 @@ internal static class AppPaths
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "SchenkerControlTray",
         "Backups");
+
+    public static string SettingsDirectory => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "SchenkerControlTray");
+
+    public static string ProfileAliasesPath => Path.Combine(SettingsDirectory, "ProfileAliases.json");
 }

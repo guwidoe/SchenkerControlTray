@@ -118,7 +118,11 @@ internal sealed class TrayApplicationContext : ApplicationContext
             _lastSnapshot = await _client.SetProfileAsync(mode, profileIndex);
             UpdateMenuFromSnapshot(_lastSnapshot);
             _fanCurveEditor?.UpdateSnapshot(_lastSnapshot);
-            _notifyIcon.ShowBalloonTip(1500, "Profile changed", $"{mode.DisplayName()} · Profile {profileIndex + 1}", ToolTipIcon.Info);
+
+            var profile = _fanTableService.GetProfileDefinitions()
+                .FirstOrDefault(p => p.Mode == mode && p.ProfileIndex == profileIndex);
+            var profileText = profile is null ? $"Profile {profileIndex + 1}" : profile.FriendlyName;
+            _notifyIcon.ShowBalloonTip(1500, "Profile changed", $"{mode.DisplayName()} · {profileText}", ToolTipIcon.Info);
         }
         catch (Exception ex)
         {
@@ -148,6 +152,14 @@ internal sealed class TrayApplicationContext : ApplicationContext
             {
                 _fanCurveEditor = new FanCurveEditorForm(_client, _fanTableService, _lastSnapshot);
                 _fanCurveEditor.FormClosed += (_, _) => _fanCurveEditor = null;
+                _fanCurveEditor.ProfilesChanged += (_, _) =>
+                {
+                    if (_lastSnapshot is not null)
+                    {
+                        UpdateMenuFromSnapshot(_lastSnapshot);
+                        _fanCurveEditor?.UpdateSnapshot(_lastSnapshot);
+                    }
+                };
                 _fanCurveEditor.Show();
             }
             else
@@ -186,10 +198,14 @@ internal sealed class TrayApplicationContext : ApplicationContext
             return;
         }
 
-        _statusItem.Text = $"{fanStatus.CurrentMode.DisplayName()} · Profile {fanStatus.CurrentProfileIndex + 1} · {fanStatus.FAN_TableName}";
         _startWithWindowsItem.Checked = _startupManager.IsEnabled();
 
         var profileDefinitions = _fanTableService.GetProfileDefinitions();
+        var activeProfile = profileDefinitions.FirstOrDefault(p => p.Mode == fanStatus.CurrentMode && p.ProfileIndex == fanStatus.CurrentProfileIndex);
+        _statusItem.Text = activeProfile is null
+            ? $"{fanStatus.CurrentMode.DisplayName()} · Profile {fanStatus.CurrentProfileIndex + 1} · {fanStatus.FAN_TableName}"
+            : $"{fanStatus.CurrentMode.DisplayName()} · {activeProfile.MenuLabel}";
+
         foreach (var (mode, menu) in _modeMenus)
         {
             menu.DropDownItems.Clear();
@@ -203,7 +219,7 @@ internal sealed class TrayApplicationContext : ApplicationContext
 
             foreach (var profile in modeProfiles)
             {
-                var item = new ToolStripMenuItem($"Profile {profile.ProfileIndex + 1} · {profile.TableName}")
+                var item = new ToolStripMenuItem(profile.MenuLabel)
                 {
                     Checked = fanStatus.CurrentMode == profile.Mode && fanStatus.CurrentProfileIndex == profile.ProfileIndex,
                 };

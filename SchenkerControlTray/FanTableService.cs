@@ -12,6 +12,18 @@ internal sealed class FanTableService
         WriteIndented = true,
     };
 
+    private readonly ProfileAliasService _aliasService;
+
+    public FanTableService()
+        : this(new ProfileAliasService())
+    {
+    }
+
+    internal FanTableService(ProfileAliasService aliasService)
+    {
+        _aliasService = aliasService;
+    }
+
     public IReadOnlyList<ProfileDefinition> GetProfileDefinitions()
     {
         if (!Directory.Exists(AppPaths.UserProfilesDirectory))
@@ -35,19 +47,24 @@ internal sealed class FanTableService
                 continue;
             }
 
-            var modeValue = int.Parse(match.Groups["mode"].Value) - 1;
-            var profileIndex = int.Parse(match.Groups["profile"].Value) - 1;
-            if (modeValue < 0 || modeValue > 3)
+            var oemModeValue = int.Parse(match.Groups["mode"].Value);
+            var mode = TryMapOemMode(oemModeValue);
+            if (mode is null)
             {
                 continue;
             }
 
+            var profileIndex = int.Parse(match.Groups["profile"].Value) - 1;
             profiles.Add(new ProfileDefinition
             {
-                Mode = (ProfileMode)modeValue,
+                Mode = mode.Value,
                 ProfileIndex = profileIndex,
                 ProfileName = userProfile.Name,
+                CustomizeName = userProfile.CustomizeName,
+                AliasName = _aliasService.GetAlias(mode.Value, profileIndex),
+                SuggestedName = BuildSuggestedName(mode.Value, profileIndex, userProfile),
                 TableName = userProfile.FAN.TableName,
+                Summary = BuildSummary(userProfile),
             });
         }
 
@@ -56,6 +73,9 @@ internal sealed class FanTableService
             .ThenBy(p => p.ProfileIndex)
             .ToList();
     }
+
+    public void SaveProfileAlias(ProfileMode mode, int profileIndex, string? alias)
+        => _aliasService.SaveAlias(mode, profileIndex, alias);
 
     public FanTable LoadFanTable(string tableName)
     {
@@ -88,5 +108,121 @@ internal sealed class FanTableService
         }
 
         return path;
+    }
+
+    internal static ProfileMode? TryMapOemMode(int oemMode)
+        => oemMode switch
+        {
+            1 => ProfileMode.Enthusiast,
+            2 => ProfileMode.Balanced,
+            3 => ProfileMode.Turbo,
+            4 => ProfileMode.Custom,
+            _ => null,
+        };
+
+    internal static string BuildSummary(UserProfileFile profile)
+    {
+        var parts = new List<string>();
+
+        var cpuWatts = profile.CPU.PL1 > 0 ? profile.CPU.PL1 : profile.CPU.AmdSPL;
+        if (cpuWatts > 0)
+        {
+            parts.Add($"{cpuWatts}W CPU");
+        }
+
+        var gpuPart = BuildGpuSummary(profile.GPU);
+        if (!string.IsNullOrWhiteSpace(gpuPart))
+        {
+            parts.Add(gpuPart);
+        }
+
+        if (!string.IsNullOrWhiteSpace(profile.FAN.TableName))
+        {
+            parts.Add(profile.FAN.TableName);
+        }
+
+        return string.Join(" · ", parts);
+    }
+
+    internal static string? BuildFriendlyProfileName(ProfileDefinition profile)
+    {
+        var alias = profile.AliasName?.Trim();
+        if (!string.IsNullOrWhiteSpace(alias))
+        {
+            return alias;
+        }
+
+        var trimmed = profile.CustomizeName?.Trim();
+        if (!string.IsNullOrWhiteSpace(trimmed) &&
+            trimmed != (profile.ProfileIndex + 1).ToString() &&
+            !string.Equals(trimmed, profile.ProfileName, StringComparison.OrdinalIgnoreCase))
+        {
+            return trimmed;
+        }
+
+        if (!string.IsNullOrWhiteSpace(profile.SuggestedName))
+        {
+            return profile.SuggestedName;
+        }
+
+        return null;
+    }
+
+    internal static string BuildSuggestedName(ProfileMode mode, int profileIndex, UserProfileFile profile)
+    {
+        var reducedGpu = IsReducedGpu(profile.GPU);
+
+        return mode switch
+        {
+            ProfileMode.Balanced when reducedGpu => "Battery Saver",
+            ProfileMode.Balanced when profileIndex == 0 => "Quiet",
+            ProfileMode.Balanced when profileIndex == 1 => "Quiet (Alt Curve)",
+            ProfileMode.Balanced => "Balanced",
+
+            ProfileMode.Enthusiast when reducedGpu => "Gaming Eco GPU",
+            ProfileMode.Enthusiast when profile.GPU.ConfigurableTGPSwitch == 1 && profile.GPU.ConfigurableTGPTarget >= 150 => "Gaming dGPU Max",
+            ProfileMode.Enthusiast when profile.GPU.DynamicBoostSwitch == 1 && profile.GPU.DynamicBoost > 0 => "Gaming Boost",
+            ProfileMode.Enthusiast => "Gaming",
+
+            ProfileMode.Turbo when profile.GPU.CoreClockOffset != 0 => "Turbo OC",
+            ProfileMode.Turbo => "Turbo",
+
+            ProfileMode.Custom => $"Custom {profileIndex + 1}",
+            _ => $"Profile {profileIndex + 1}",
+        };
+    }
+
+    private static bool IsReducedGpu(GpuProfileSettings gpu)
+        => gpu.ConfigurableTGPSwitch == 0 &&
+           gpu.ConfigurableTGPTarget == 0 &&
+           gpu.DynamicBoostSwitch == 0 &&
+           gpu.DynamicBoost == 0 &&
+           gpu.CoreClockOffset == 0;
+
+    private static string? BuildGpuSummary(GpuProfileSettings gpu)
+    {
+        var gpuBits = new List<string>();
+
+        if (gpu.ConfigurableTGPSwitch == 1 && gpu.ConfigurableTGPTarget > 0)
+        {
+            gpuBits.Add($"{gpu.ConfigurableTGPTarget}W GPU");
+        }
+
+        if (gpu.DynamicBoostSwitch == 1 && gpu.DynamicBoost > 0)
+        {
+            gpuBits.Add($"+{gpu.DynamicBoost}W boost");
+        }
+
+        if (gpu.CoreClockOffset != 0)
+        {
+            gpuBits.Add($"{gpu.CoreClockOffset:+#;-#;0} MHz core");
+        }
+
+        if (gpuBits.Count == 0 && IsReducedGpu(gpu))
+        {
+            gpuBits.Add("reduced GPU");
+        }
+
+        return gpuBits.Count == 0 ? null : string.Join(" ", gpuBits);
     }
 }

@@ -144,9 +144,19 @@ internal sealed class ProfileDefinition
     public ProfileMode Mode { get; init; }
     public int ProfileIndex { get; init; }
     public string ProfileName { get; init; } = string.Empty;
+    public string? CustomizeName { get; init; }
+    public string? AliasName { get; init; }
+    public string? SuggestedName { get; init; }
     public string TableName { get; init; } = string.Empty;
+    public string Summary { get; init; } = string.Empty;
 
-    public string DisplayName => $"{Mode.DisplayName()} · Profile {ProfileIndex + 1} · {TableName}";
+    [JsonIgnore]
+    public string FriendlyName => FanTableService.BuildFriendlyProfileName(this) ?? $"Profile {ProfileIndex + 1}";
+
+    [JsonIgnore]
+    public string MenuLabel => string.IsNullOrWhiteSpace(Summary) ? FriendlyName : $"{FriendlyName} · {Summary}";
+
+    public string DisplayName => $"{Mode.DisplayName()} · {MenuLabel}";
 
     public override string ToString() => DisplayName;
 }
@@ -154,7 +164,25 @@ internal sealed class ProfileDefinition
 internal sealed class UserProfileFile
 {
     public string Name { get; set; } = string.Empty;
+    public string? CustomizeName { get; set; }
+    public CpuProfileSettings CPU { get; set; } = new();
+    public GpuProfileSettings GPU { get; set; } = new();
     public FanSettings FAN { get; set; } = new();
+}
+
+internal sealed class CpuProfileSettings
+{
+    public int PL1 { get; set; }
+    public int AmdSPL { get; set; }
+}
+
+internal sealed class GpuProfileSettings
+{
+    public int ConfigurableTGPSwitch { get; set; }
+    public int ConfigurableTGPTarget { get; set; }
+    public int DynamicBoostSwitch { get; set; }
+    public int DynamicBoost { get; set; }
+    public int CoreClockOffset { get; set; }
 }
 
 internal sealed class FanSettings

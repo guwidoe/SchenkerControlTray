@@ -11,11 +11,13 @@ MIT. See [LICENSE](LICENSE).
 - tray app for quick profile switching
 - per-mode subprofiles
 - startup toggle: **Start with Windows**
+- descriptive profile names with custom rename support
 - fan curve editor with:
   - live CPU/GPU charts
   - point sliders for temperature and duty
   - direct grid editing
   - JSON backup on every save
+  - rename dialog for profile labels
 - MSI installer build
 - optional PowerShell install/uninstall scripts
 - unit tests for core non-UI logic
