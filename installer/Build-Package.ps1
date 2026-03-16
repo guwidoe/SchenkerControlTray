@@ -1,7 +1,7 @@
 param(
     [string]$Configuration = 'Release',
     [string]$Runtime = 'win-x64',
-    [string]$Version = '1.0.0'
+    [string]$Version = '1.0.5'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -17,7 +17,11 @@ $msiDistPath = Join-Path $repoRoot "dist\SchenkerControlTray-$Runtime-$Version.m
 
 Push-Location $projectDir
 try {
+    dotnet restore -r $Runtime
+    if ($LASTEXITCODE -ne 0) { throw "dotnet restore failed with exit code $LASTEXITCODE" }
+
     dotnet publish -c $Configuration -r $Runtime --self-contained false -p:Version=$Version
+    if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed with exit code $LASTEXITCODE" }
 }
 finally {
     Pop-Location
@@ -26,6 +30,7 @@ finally {
 Push-Location (Split-Path $installerProject)
 try {
     dotnet build $installerProject -c $Configuration -p:ProductVersion=$Version
+    if ($LASTEXITCODE -ne 0) { throw "dotnet build (installer) failed with exit code $LASTEXITCODE" }
 }
 finally {
     Pop-Location

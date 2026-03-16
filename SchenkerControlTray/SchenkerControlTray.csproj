@@ -6,7 +6,8 @@
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>1.0.4</Version>
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+    <Version>1.0.5</Version>
   </PropertyGroup>
 
   <ItemGroup>

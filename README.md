@@ -2,6 +2,10 @@
 
 Small tray app for SCHENKER / XMG Control Center systems.
 
+## License
+
+MIT. See [LICENSE](LICENSE).
+
 ## Features
 
 - tray app for quick profile switching
@@ -14,6 +18,7 @@ Small tray app for SCHENKER / XMG Control Center systems.
   - JSON backup on every save
 - MSI installer build
 - optional PowerShell install/uninstall scripts
+- unit tests for core non-UI logic
 
 ## Reverse-engineering notes
 
@@ -62,14 +67,21 @@ Backups are written to:
 ## Build
 
 ```powershell
-cd C:\Users\gwd\Repositories\SchenkerControlTray
+cd C:\Repositories\SchenkerControlTray
 dotnet build SchenkerControlTray.sln
+```
+
+## Test
+
+```powershell
+cd C:\Repositories\SchenkerControlTray
+dotnet test SchenkerControlTray.sln
 ```
 
 ## Publish app
 
 ```powershell
-cd C:\Users\gwd\Repositories\SchenkerControlTray\SchenkerControlTray
+cd C:\Repositories\SchenkerControlTray\SchenkerControlTray
 dotnet publish -c Release -r win-x64 --self-contained false
 ```
 
@@ -84,27 +96,27 @@ Files involved:
 Build everything:
 
 ```powershell
-cd C:\Users\gwd\Repositories\SchenkerControlTray\installer
+cd C:\Repositories\SchenkerControlTray\installer
 .\Build-Package.ps1
 ```
 
 Optional version override:
 
 ```powershell
-.\Build-Package.ps1 -Version 1.0.5
+.\Build-Package.ps1 -Version 1.0.6
 ```
 
 Outputs:
 
 - folder package: `dist\SchenkerControlTray-win-x64`
 - zip package: `dist\SchenkerControlTray-win-x64.zip`
-- MSI: `dist\SchenkerControlTray-win-x64-1.0.4.msi`
+- MSI: `dist\SchenkerControlTray-win-x64-1.0.5.msi`
 
 You can also build the installer directly after publishing:
 
 ```powershell
-cd C:\Users\gwd\Repositories\SchenkerControlTray
-dotnet build .\installer\SchenkerControlTray.Installer\SchenkerControlTray.Installer.wixproj -c Release -p:ProductVersion=1.0.4
+cd C:\Repositories\SchenkerControlTray
+dotnet build .\installer\SchenkerControlTray.Installer\SchenkerControlTray.Installer.wixproj -c Release -p:ProductVersion=1.0.5
 ```
 
 ## PowerShell install scripts
@@ -117,20 +129,20 @@ Scripts live in:
 Install:
 
 ```powershell
-cd C:\Users\gwd\Repositories\SchenkerControlTray\installer
+cd C:\Repositories\SchenkerControlTray\installer
 .\Install.ps1 -EnableStartup
 ```
 
 Uninstall:
 
 ```powershell
-cd C:\Users\gwd\Repositories\SchenkerControlTray\installer
+cd C:\Repositories\SchenkerControlTray\installer
 .\Uninstall.ps1
 ```
 
 ## Run manually
 
 ```powershell
-cd C:\Users\gwd\Repositories\SchenkerControlTray\SchenkerControlTray\bin\Debug\net8.0-windows
+cd C:\Repositories\SchenkerControlTray\SchenkerControlTray\bin\Debug\net8.0-windows
 .\SchenkerControlTray.exe
 ```
